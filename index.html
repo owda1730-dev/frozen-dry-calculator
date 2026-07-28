@@ -56,7 +56,7 @@
         .empty-state { text-align: center; padding: 40px 20px; color: var(--color-text-secondary); }
         .edit-item { padding: 12px; border: 2px solid var(--color-border); border-radius: 8px; margin-bottom: 12px; background: white; }
         .edit-item input { margin: 0; padding: 10px; font-size: 16px; }
-        .btn-small { padding: 8px 10px; font-size: 12px; min-width: 40px; white-space: nowrap; }
+        .btn-small { padding: 0px 2px; font-size: 8px; width: 20px; height: 20px; white-space: nowrap; display: flex; align-items: center; justify-content: center; border-radius: 3px; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -328,9 +328,9 @@
                 rawWeightInKg: weightInKg,
                 finishedWeight: finishedWeight,
                 shape: shape,
-                totalCost: totalCost.toFixed(2),
-                costPerGram: costPerGram.toFixed(2),
-                yield: yieldRate.toFixed(2),
+                totalCost: formatNumber(totalCost, 2),
+                costPerGram: formatNumber(costPerGram, 2),
+                yield: formatNumber(yieldRate, 2),
                 date: new Date().toLocaleDateString('zh-TW'),
             };
 
@@ -343,7 +343,7 @@
             document.getElementById('finishedWeight').value = '';
             document.getElementById('materialSelect').value = '';
 
-            alert(`成功記錄！每克成本: $${costPerGram.toFixed(2)}`);
+            alert(`成功記錄！每克成本: $${formatNumber(costPerGram, 2)}`);
         }
 
         function deleteRecord(id) {
@@ -367,14 +367,14 @@
                         <div><div style="font-size: 12px; color: var(--color-text-secondary);">日期</div><div style="font-weight: 600;">${record.date}</div></div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                        <div class="stat-box"><div class="stat-label">原料</div><div class="stat-value">${record.rawWeight} ${record.rawWeightUnit}</div></div>
+                        <div class="stat-box"><div class="stat-label">原料</div><div class="stat-value">${record.rawWeight} ${record.rawWeightUnit}${record.rawWeightUnit === '斤' ? ` (${formatKgValue(record.rawWeightInKg)}kg)` : ` (${formatUnitDisplay(record.rawWeightInKg)}斤)`}</div></div>
                         <div class="stat-box green"><div class="stat-label">成品</div><div class="stat-value">${record.finishedWeight}g</div></div>
                         <div class="stat-box"><div class="stat-label">每克成本</div><div class="stat-value">$${record.costPerGram}</div></div>
                         <div class="stat-box"><div class="stat-label">得率</div><div class="stat-value">${record.yield}%</div></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 14px;">總成本: <strong>$${record.totalCost}</strong></span>
-                        <button class="btn btn-danger" onclick="deleteRecord(${record.id})">🗑️</button>
+                        <button class="btn btn-small" style="background: white; color: var(--color-danger); border: 1px solid var(--color-danger); font-weight: bold; cursor: pointer;" onclick="deleteRecord(${record.id})">✕</button>
                     </div>
                 </div>
             `).join('');
@@ -401,11 +401,40 @@
 
             Object.values(productMap).forEach(product => {
                 product.orderCount = product.orders.length;
-                product.averageFinishedWeight = (product.totalFinishedWeightG / product.orderCount).toFixed(0);
-                product.averageCostPerGram = (product.totalCost / product.totalFinishedWeightG).toFixed(2);
+                product.averageFinishedWeight = formatNumber(product.totalFinishedWeightG / product.orderCount, 0);
+                product.averageCostPerGram = formatNumber(product.totalCost / product.totalFinishedWeightG, 2);
             });
 
             return Object.values(productMap).sort((a, b) => b.orderCount - a.orderCount);
+        }
+
+        function toggleDetails(idx) {
+            const elem = document.getElementById('details_' + idx);
+            elem.style.display = elem.style.display === 'none' ? 'block' : 'none';
+            const arrow = document.getElementById('arrow_' + idx);
+            arrow.textContent = elem.style.display === 'none' ? '▶' : '▼';
+        }
+
+        // 格式化數字，小數點為0時不顯示
+        function formatNumber(num, decimals = 2) {
+            const rounded = parseFloat(num).toFixed(decimals);
+            return parseFloat(rounded) === parseInt(rounded) ? parseInt(rounded).toString() : rounded;
+        }
+
+        // 格式化公斤顯示：整數則顯示整數，有小數則顯示到最後一位有數值的位置（最多兩位）
+        function formatKgValue(kg) {
+            const value = parseFloat(kg);
+            if (value === Math.floor(value)) {
+                return Math.floor(value).toString();
+            } else {
+                const fixed = value.toFixed(2);
+                return parseFloat(fixed).toString();
+            }
+        }
+
+        function formatUnitDisplay(kgValue) {
+            const jinValue = (kgValue / 0.6);
+            return formatNumber(jinValue, 1);
         }
 
         function updateAnalytics() {
@@ -417,16 +446,47 @@
             }
             container.innerHTML = `
                 <div style="margin-bottom: 20px;"><h3>共 ${analytics.length} 個品項</h3></div>
-                ${analytics.map((product, index) => `
-                    <div style="border: 2px solid var(--color-border); border-radius: 8px; padding: 16px; margin-bottom: 12px; background: white;">
-                        <h3 style="margin-bottom: 8px;">${product.name}</h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 13px;">
+                ${analytics.map((product, index) => {
+                    const yields = product.orders.map(o => parseFloat(o.yield));
+                    const avgYield = yields.reduce((a, b) => a + b) / yields.length;
+                    const yieldVariation = Math.max(...yields.map(y => Math.abs(y - avgYield)));
+                    const maxYield = Math.max(...yields);
+                    const minYield = Math.min(...yields);
+                    return `
+                    <div style="border: 2px solid var(--color-border); border-radius: 8px; padding: 16px; margin-bottom: 12px; background: white; cursor: pointer;" onclick="toggleDetails(${index})">
+                        <h3 style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <span id="arrow_${index}">▼</span>
+                            ${product.name}
+                        </h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 8px; font-size: 13px;">
                             <div><span style="color: var(--color-text-secondary);">訂單數</span><br><strong>${product.orderCount} 次</strong></div>
-                            <div><span style="color: var(--color-text-secondary);">總成品</span><br><strong>${product.totalFinishedWeightG} g</strong></div>
-                            <div><span style="color: var(--color-text-secondary);">平均每克</span><br><strong>$${product.averageCostPerGram}</strong></div>
+                            <div><span style="color: var(--color-text-secondary);">平均得率</span><br><strong>${formatNumber(avgYield, 2)}%</strong></div>
+                            <div><span style="color: var(--color-text-secondary);">得率範圍</span><br><strong>${formatNumber(minYield, 2)}% ~ ${formatNumber(maxYield, 2)}%</strong></div>
+                            <div><span style="color: var(--color-text-secondary);">變異度</span><br><strong style="color: ${yieldVariation > 2 ? 'var(--color-danger)' : 'var(--color-text-primary)'}">${formatNumber(yieldVariation, 2)}%</strong></div>
+                            <div><span style="color: var(--color-text-secondary);">平均每克</span><br><strong style="color: var(--color-primary);">$${product.averageCostPerGram}</strong></div>
+                        </div>
+                        <div id="details_${index}" style="border-top: 1px solid var(--color-border); padding-top: 12px; margin-top: 12px; display: none;">
+                            <p style="font-size: 12px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 8px;">每批明細：</p>
+                            ${product.orders.map((order, idx) => {
+                                const yieldValue = parseFloat(order.yield);
+                                const yieldDiff = yieldValue - avgYield;
+                                const costDiff = parseFloat(order.costPerGram) - parseFloat(product.averageCostPerGram);
+                                const isGood = Math.abs(yieldDiff) <= 2;
+                                const jinWeight = formatUnitDisplay(order.rawWeightInKg);
+                                return `
+                                    <div style="display: grid; grid-template-columns: 80px 130px 80px 80px 90px 90px; gap: 6px; font-size: 11px; padding: 8px; border-bottom: 1px solid var(--color-bg-lighter); background: ${isGood ? 'transparent' : 'rgba(220, 38, 38, 0.05)'};">
+                                        <div><span style="color: var(--color-text-secondary);">日期</span><br><strong>${order.date}</strong></div>
+                                        <div><span style="color: var(--color-text-secondary);">原料→成品</span><br><strong>${formatKgValue(order.rawWeightInKg)}kg (${jinWeight}斤)→${order.finishedWeight}g</strong></div>
+                                        <div><span style="color: var(--color-text-secondary);">得率</span><br><strong>${formatNumber(yieldValue, 2)}%</strong></div>
+                                        <div><span style="color: var(--color-text-secondary);">得率差</span><br><strong style="color: ${yieldDiff > 0 ? 'var(--color-success)' : yieldDiff < 0 ? 'var(--color-danger)' : 'inherit'}">${yieldDiff > 0 ? '+' : ''}${formatNumber(yieldDiff, 2)}%</strong></div>
+                                        <div><span style="color: var(--color-text-secondary);">每克成本</span><br><strong style="color: var(--color-primary);">$${order.costPerGram}</strong></div>
+                                        <div><span style="color: var(--color-text-secondary);">成本差</span><br><strong style="color: ${costDiff > 0 ? 'var(--color-danger)' : costDiff < 0 ? 'var(--color-success)' : 'inherit'}">${costDiff > 0 ? '+' : ''}$${formatNumber(costDiff, 2)}</strong></div>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
-                `).join('')}
+                `}).join('')}
             `;
         }
 
@@ -460,14 +520,14 @@
         function updateMaterialsList() {
             const list = document.getElementById('materialsList');
             list.innerHTML = materials.map((m, index) => {
-                const costPerJin = (m.costPerKg * 0.6).toFixed(2);
+                const costPerJin = formatNumber(m.costPerKg * 0.6, 2);
                 return `
                 <div class="edit-item">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                        <input type="text" value="${m.name}" onchange="editMaterial(${m.id}, 'name', this.value)" style="flex: 1; min-width: 100px;">
-                        <button class="btn btn-small" style="background: var(--color-primary); color: white;" ${index > 0 ? `onclick="moveMaterial(${m.id}, 'up')"` : 'disabled'}>⬆️</button>
-                        <button class="btn btn-small" style="background: var(--color-primary); color: white;" ${index < materials.length - 1 ? `onclick="moveMaterial(${m.id}, 'down')"` : 'disabled'}>⬇️</button>
-                        <button class="btn btn-danger btn-small" onclick="deleteMaterial(${m.id})">🗑️</button>
+                    <div style="display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 6px; margin-bottom: 12px;">
+                        <input type="text" value="${m.name}" onchange="editMaterial(${m.id}, 'name', this.value)" style="min-width: 80px;">
+                        <button class="btn btn-small" style="background: var(--color-primary); color: white;" ${index > 0 ? `onclick="moveMaterial(${m.id}, 'up')"` : 'disabled'}>▲</button>
+                        <button class="btn btn-small" style="background: var(--color-primary); color: white;" ${index < materials.length - 1 ? `onclick="moveMaterial(${m.id}, 'down')"` : 'disabled'}>▼</button>
+                        <button class="btn btn-small" style="background: white; color: var(--color-danger); border: 1px solid var(--color-danger); font-weight: bold;" onclick="deleteMaterial(${m.id})">✕</button>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                         <span>$</span>
@@ -487,14 +547,14 @@
         function updateMethodsList() {
             const list = document.getElementById('methodsList');
             list.innerHTML = processMethods.map((m, index) => {
-                const costPerJin = (m.costPerKg * 0.6).toFixed(2);
+                const costPerJin = formatNumber(m.costPerKg * 0.6, 2);
                 return `
                 <div class="edit-item">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                        <input type="text" value="${m.name}" onchange="editMethod('${m.id}', 'name', this.value)" style="flex: 1; min-width: 100px;">
-                        <button class="btn btn-small" style="background: var(--color-success); color: white;" ${index > 0 ? `onclick="moveMethod('${m.id}', 'up')"` : 'disabled'}>⬆️</button>
-                        <button class="btn btn-small" style="background: var(--color-success); color: white;" ${index < processMethods.length - 1 ? `onclick="moveMethod('${m.id}', 'down')"` : 'disabled'}>⬇️</button>
-                        <button class="btn btn-danger btn-small" onclick="deleteMethod('${m.id}')">🗑️</button>
+                    <div style="display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 6px; margin-bottom: 12px;">
+                        <input type="text" value="${m.name}" onchange="editMethod('${m.id}', 'name', this.value)" style="min-width: 80px;">
+                        <button class="btn btn-small" style="background: var(--color-success); color: white;" ${index > 0 ? `onclick="moveMethod('${m.id}', 'up')"` : 'disabled'}>▲</button>
+                        <button class="btn btn-small" style="background: var(--color-success); color: white;" ${index < processMethods.length - 1 ? `onclick="moveMethod('${m.id}', 'down')"` : 'disabled'}>▼</button>
+                        <button class="btn btn-small" style="background: white; color: var(--color-danger); border: 1px solid var(--color-danger); font-weight: bold;" onclick="deleteMethod('${m.id}')">✕</button>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                         <span>$</span>
