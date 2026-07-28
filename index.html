@@ -95,7 +95,12 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>產品形狀/尺寸</label>
-                    <input type="text" id="shape" placeholder="例如：粒 1.6cm">
+                    <select id="shape">
+                        <option value="">-- 請選擇 --</option>
+                        <option value="原肉">原肉</option>
+                        <option value="粒1.6cm">粒1.6cm</option>
+                        <option value="粒1.0cm">粒1.0cm</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>成品淨重 (克)</label>
@@ -454,35 +459,64 @@
 
         function updateMaterialsList() {
             const list = document.getElementById('materialsList');
-            list.innerHTML = materials.map((m, index) => `
-                <div class="edit-item" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <input type="text" value="${m.name}" onchange="editMaterial(${m.id}, 'name', this.value)" style="flex: 1; min-width: 100px;">
-                    <span>$</span>
-                    <input type="number" value="${m.costPerKg}" onchange="editMaterial(${m.id}, 'costPerKg', this.value)" style="width: 70px;">
-                    <span>/kg</span>
-                    <button class="btn btn-danger btn-small" onclick="deleteMaterial(${m.id})">🗑️</button>
+            list.innerHTML = materials.map((m, index) => {
+                const costPerJin = (m.costPerKg * 0.6).toFixed(2);
+                return `
+                <div class="edit-item">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <input type="text" value="${m.name}" onchange="editMaterial(${m.id}, 'name', this.value)" style="flex: 1; min-width: 100px;">
+                        <button class="btn btn-small" style="background: var(--color-primary); color: white;" ${index > 0 ? `onclick="moveMaterial(${m.id}, 'up')"` : 'disabled'}>⬆️</button>
+                        <button class="btn btn-small" style="background: var(--color-primary); color: white;" ${index < materials.length - 1 ? `onclick="moveMaterial(${m.id}, 'down')"` : 'disabled'}>⬇️</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteMaterial(${m.id})">🗑️</button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span>$</span>
+                        <input type="number" value="${m.costPerKg}" onchange="editMaterial(${m.id}, 'costPerKg', this.value)" style="width: 70px;">
+                        <span>/kg</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--color-text-secondary);">
+                        <span>或</span>
+                        <span>$</span>
+                        <input type="number" value="${costPerJin}" onchange="editMaterial(${m.id}, 'costPerJin', this.value)" style="width: 70px;">
+                        <span>/斤 (自動轉換)</span>
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function updateMethodsList() {
             const list = document.getElementById('methodsList');
-            list.innerHTML = processMethods.map(m => `
-                <div class="edit-item" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <input type="text" value="${m.name}" onchange="editMethod('${m.id}', 'name', this.value)" style="flex: 1; min-width: 100px;">
-                    <span>$</span>
-                    <input type="number" value="${m.costPerKg}" onchange="editMethod('${m.id}', 'costPerKg', this.value)" style="width: 70px;">
-                    <span>/kg</span>
-                    <button class="btn btn-danger btn-small" onclick="deleteMethod('${m.id}')">🗑️</button>
+            list.innerHTML = processMethods.map((m, index) => {
+                const costPerJin = (m.costPerKg * 0.6).toFixed(2);
+                return `
+                <div class="edit-item">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <input type="text" value="${m.name}" onchange="editMethod('${m.id}', 'name', this.value)" style="flex: 1; min-width: 100px;">
+                        <button class="btn btn-small" style="background: var(--color-success); color: white;" ${index > 0 ? `onclick="moveMethod('${m.id}', 'up')"` : 'disabled'}>⬆️</button>
+                        <button class="btn btn-small" style="background: var(--color-success); color: white;" ${index < processMethods.length - 1 ? `onclick="moveMethod('${m.id}', 'down')"` : 'disabled'}>⬇️</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteMethod('${m.id}')">🗑️</button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span>$</span>
+                        <input type="number" value="${m.costPerKg}" onchange="editMethod('${m.id}', 'costPerKg', this.value)" style="width: 70px;">
+                        <span>/kg</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--color-text-secondary);">
+                        <span>或</span>
+                        <span>$</span>
+                        <input type="number" value="${costPerJin}" onchange="editMethod('${m.id}', 'costPerJin', this.value)" style="width: 70px;">
+                        <span>/斤 (自動轉換)</span>
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function editMaterial(id, field, value) {
             const m = materials.find(x => x.id === id);
             if (m) {
                 if (field === 'name') m.name = value;
-                else m.costPerKg = parseFloat(value);
+                else if (field === 'costPerKg') m.costPerKg = parseFloat(value);
+                else if (field === 'costPerJin') m.costPerKg = parseFloat(value) / 0.6;
                 updateMaterialSelect();
                 updateMaterialsList();
                 saveToLocalStorage();
@@ -493,11 +527,36 @@
             const m = processMethods.find(x => x.id === id);
             if (m) {
                 if (field === 'name') m.name = value;
-                else m.costPerKg = parseFloat(value);
+                else if (field === 'costPerKg') m.costPerKg = parseFloat(value);
+                else if (field === 'costPerJin') m.costPerKg = parseFloat(value) / 0.6;
                 updateMethodSelector();
                 updateMethodsList();
                 saveToLocalStorage();
             }
+        }
+
+        function moveMaterial(id, direction) {
+            const index = materials.findIndex(m => m.id === id);
+            if (direction === 'up' && index > 0) {
+                [materials[index], materials[index - 1]] = [materials[index - 1], materials[index]];
+            } else if (direction === 'down' && index < materials.length - 1) {
+                [materials[index], materials[index + 1]] = [materials[index + 1], materials[index]];
+            }
+            updateMaterialSelect();
+            updateMaterialsList();
+            saveToLocalStorage();
+        }
+
+        function moveMethod(id, direction) {
+            const index = processMethods.findIndex(m => m.id === id);
+            if (direction === 'up' && index > 0) {
+                [processMethods[index], processMethods[index - 1]] = [processMethods[index - 1], processMethods[index]];
+            } else if (direction === 'down' && index < processMethods.length - 1) {
+                [processMethods[index], processMethods[index + 1]] = [processMethods[index + 1], processMethods[index]];
+            }
+            updateMethodSelector();
+            updateMethodsList();
+            saveToLocalStorage();
         }
 
         function deleteMaterial(id) {
