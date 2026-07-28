@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>凍乾成本計算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #2563eb;
+            --color-primary-dark: #1d4ed8;
+            --color-success: #16a34a;
+            --color-success-dark: #15803d;
+            --color-danger: #dc2626;
+            --color-danger-dark: #b91c1c;
+            --color-bg-light: #f3f4f6;
+            --color-bg-lighter: #f9fafb;
+            --color-border: #d1d5db;
+            --color-text-primary: #1f2937;
+            --color-text-secondary: #6b7280;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 16px;
+            color: var(--color-text-primary);
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            color: var(--color-text-primary);
+        }
+
+        .tab-btn.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .tab-btn:active {
+            transform: scale(0.98);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 24px;
+            display: none;
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        .card h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--color-text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary), #1d4ed8);
+            color: white;
+        }
+
+        .btn-primary:active {
+            opacity: 0.9;
+        }
+
+        .btn-success {
+            background: var(--color-success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--color-danger);
+            color: white;
+            padding: 8px 12px;
+            width: auto;
+        }
+
+        .section-box {
+            background: var(--color-bg-lighter);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .section-box h3 {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--color-text-primary);
+        }
+
+        .method-selector {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .method-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .method-item:active {
+            border-color: var(--color-primary);
+        }
+
+        .method-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .method-info {
+            flex: 1;
+        }
+
+        .method-info p:first-child {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .method-info p:last-child {
+            font-size: 14px;
+            color: var(--color-primary);
+        }
+
+        .record-item {
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            background: var(--color-bg-lighter);
+        }
+
+        .record-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        @media (max-width: 640px) {
+            .record-header {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .record-stat {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .record-stat {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .stat-box {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        .stat-box.green .stat-value { color: var(--color-success); }
+        .stat-box.purple .stat-value { color: #7c3aed; }
+        .stat-box.orange .stat-value { color: #ea580c; }
+
+        .record-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        @media (max-width: 640px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .edit-item {
+            display: block;
+            padding: 12px;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: white;
+        }
+
+        .edit-item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .edit-item-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .edit-item input {
+            margin: 0;
+            padding: 10px !important;
+            font-size: 16px !important;
+        }
+
+        .edit-item input:first-child {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .edit-item input[type="number"] {
+            width: 70px;
+        }
+
+        .edit-item .unit {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .edit-item-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-small {
+            padding: 8px 10px !important;
+            font-size: 12px !important;
+            min-width: 40px;
+            white-space: nowrap;
+        }
+
+        .price-converter {
+            padding: 8px 0;
+            border-top: 1px solid var(--color-border);
+            margin-top: 8px;
+        }
+
+        .price-converter-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .price-converter-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .price-converter-input input {
+            width: 70px !important;
+        }
+
+        .settings-section {
+            margin-bottom: 32px;
+        }
+
+        .settings-section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>凍乾成本計算器</h1>
+            <p>快速計算每克成本及得率</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('calculator')">📊 成本計算</button>
+            <button class="tab-btn" onclick="switchTab('history')">📋 歷史記錄</button>
+            <button class="tab-btn" onclick="switchTab('analytics')">📈 統計分析</button>
+            <button class="tab-btn" onclick="switchTab('settings')">⚙️ 設定管理</button>
+        </div>
+
+        <!-- 計算頁面 -->
+        <div id="calculator" class="card active">
+            <h2>計算新產品成本</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>原料選擇</label>
+                    <select id="materialSelect">
+                        <option value="">-- 請選擇 --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>原料重量</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" id="weight" step="0.1" placeholder="輸入重量" style="flex: 1;">
+                        <select id="weightUnit" style="width: 80px;">
+                            <option value="kg">公斤 (kg)</option>
+                            <option value="jin">斤</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>產品形狀/尺寸</label>
+                    <input type="text" id="shape" placeholder="例如：粒 1.6cm">
+                </div>
+
+                <div class="form-group">
+                    <label>成品淨重 (克)</label>
+                    <input type="number" id="finishedWeight" step="10" placeholder="輸入成品淨重">
+                </div>
+            </div>
+
+            <div class="section-box">
+                <h3>選擇加工方法</h3>
+                <div class="method-selector" id="methodSelector"></div>
+            </div>
+
+            <button class="btn btn-primary" onclick="calculateCost()">
+                ➕ 計算成本並記錄
+            </button>
+        </div>
+
+        <!-- 歷史記錄頁面 -->
+        <div id="history" class="card">
+            <h2>計算歷史記錄</h2>
+            <div id="recordsList"></div>
+        </div>
+
+        <!-- 統計分析頁面 -->
+        <div id="analytics" class="card">
+            <h2>統計分析</h2>
+            <div id="analyticsContent"></div>
+        </div>
+
+        <!-- 品項詳情頁面 -->
+        <div id="productDetail" class="card">
+            <button class="btn btn-primary" onclick="switchTab('analytics')" style="margin-bottom: 20px;">← 返回統計</button>
+            <h2 id="productDetailTitle"></h2>
+            <div id="productDetailContent"></div>
+        </div>
+
+        <!-- 設定管理頁面 -->
+        <div id="settings" class="card">
+            <div style="margin-bottom: 24px; padding: 16px; background: var(--color-bg-lighter); border-radius: 8px;">
+                <h3 style="margin-bottom: 12px;">📥📤 數據備份與還原</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <button class="btn btn-primary" onclick="exportData()" style="font-size: 14px;">📥 導出備份</button>
+                    <button class="btn btn-success" onclick="importData()" style="font-size: 14px;">📤 導入備份</button>
+                </div>
+                <p style="font-size: 12px; color: var(--color-text-secondary); margin-top: 12px;">
+                    💡 提示：導出備份到 iPhone 檔案 App 或 iCloud Drive，更新後可導入恢復所有數據
+                </p>
+            </div>
+
+            <div class="settings-section">
+                <h2>原料管理</h2>
+
+                <div class="section-box">
+                    <h3>新增原料</h3>
+                    <div class="input-group">
+                        <input type="text" id="newMaterialName" placeholder="原料名稱">
+                        <input type="number" id="newMaterialCost" placeholder="價格 ($/kg)">
+                        <button class="btn btn-primary" style="width: 80px; font-size: 14px;" onclick="addMaterial()">新增</button>
+                    </div>
+                </div>
+
+                <div id="materialsList"></div>
+            </div>
+
+            <div class="settings-section">
+                <h2>加工方法管理</h2>
+
+                <div class="section-box">
+                    <h3>新增加工方法</h3>
+                    <div class="input-group">
+                        <input type="text" id="newMethodName" placeholder="加工方法名稱">
+                        <input type="number" id="newMethodCost" placeholder="價格 ($/kg)">
+                        <button class="btn btn-success" style="width: 80px; font-size: 14px;" onclick="addMethod()">新增</button>
+                    </div>
+                </div>
+
+                <div id="methodsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 數據存儲
+        let materials = [
+            { id: 1, name: '牛肉泥', costPerKg: 96 },
+            { id: 2, name: '雞里肌', costPerKg: 136.5 },
+            { id: 3, name: '虱目魚柳', costPerKg: 217 },
+            { id: 4, name: '雞胸清肉泥', costPerKg: 224 },
+            { id: 5, name: '雞胸肉', costPerKg: 208 },
+        ];
+
+        let processMethods = [
+            { id: 'freeze', name: '預凍塑型', costPerKg: 10 },
+            { id: 'labor', name: '代工費', costPerKg: 110 },
+            { id: 'cut_1_6', name: '切丁1.6cm', costPerKg: 40 },
+            { id: 'cut_1_0', name: '切丁1.0cm', costPerKg: 50 },
+            { id: 'beef_mix', name: '牛肉(混)', costPerKg: 16.67 },
+            { id: 'pumpkin_mix', name: '南瓜(混)', costPerKg: 2.77 },
+            { id: 'mulch', name: '打泥', costPerKg: 25 },
+        ];
+
+        let selectedMethods = processMethods.map(m => m.id);
+        let records = [];
+        let currentProductDetail = null;
+
+        // 初始化
+        function init() {
+            loadFromLocalStorage(); // 從 localStorage 讀取保存的數據
+            updateMaterialSelect();
+            updateMethodSelector();
+            updateMaterialsList();
+            updateMethodsList();
+            updateRecordsList();
+        }
+
+        // 保存到 localStorage
+        function saveToLocalStorage() {
+            const data = {
+                materials: materials,
+                processMethods: processMethods,
+                records: records,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('frozenDryCalcData', JSON.stringify(data));
+        }
+
+        // 從 localStorage 讀取
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('frozenDryCalcData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    materials = data.materials || materials;
+                    processMethods = data.processMethods || processMethods;
+                    records = data.records || records;
+                    selectedMethods = processMethods.map(m => m.id);
+                } catch (e) {
+                    console.log('載入保存數據失敗，使用預設值');
+                }
+            }
+        }
+
+        // 導出為 JSON 檔案
+        function exportData() {
+            const data = {
+                materials: materials,
+                processMethods: processMethods,
+                records: records,
+                exportDate: new Date().toLocaleString('zh-TW')
+            };
+
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('✅ 備份已下載！');
+        }
+
+        // 導入 JSON 檔案
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const data = JSON.parse(event.target.result);
+
+                        if (data.materials) materials = data.materials;
+                        if (data.processMethods) processMethods = data.processMethods;
+                        if (data.records) records = data.records;
+
+                        selectedMethods = processMethods.map(m => m.id);
+
+                        saveToLocalStorage();
+                        updateMaterialSelect();
+                        updateMethodSelector();
+                        updateMaterialsList();
+                        updateMethodsList();
+                        updateRecordsList();
+
+                        alert('✅ 數據已導入！');
+                    } catch (error) {
+                        alert('❌ 檔案格式錯誤，請確認是備份檔案');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // 生成品項名稱
+        function getProductName(materialName, shape) {
+            return `${materialName}${shape ? ` ${shape}` : ''}`;
+        }
+
+        // 計算統計數據
+        function calculateAnalytics() {
+            const productMap = {};
+
+            records.forEach(record => {
+                const productName = getProductName(record.materialName, record.shape);
+
+                if (!productMap[productName]) {
+                    productMap[productName] = {
+                        name: productName,
+                        materialName: record.materialName,
+                        shape: record.shape,
+                        orders: [],
+                        totalRawWeightKg: 0,
+                        totalFinishedWeightG: 0,
+                        totalCost: 0,
+                    };
+                }
+
+                productMap[productName].orders.push({
+                    date: record.date,
+                    rawWeight: record.rawWeight,
+                    rawWeightUnit: record.rawWeightUnit,
+                    rawWeightInKg: record.rawWeightInKg,
+                    finishedWeight: record.finishedWeight,
+                    costPerGram: parseFloat(record.costPerGram),
+                    totalCost: parseFloat(record.totalCost),
+                });
+
+                productMap[productName].totalRawWeightKg += record.rawWeightInKg;
+                productMap[productName].totalFinishedWeightG += record.finishedWeight;
+                productMap[productName].totalCost += parseFloat(record.totalCost);
+            });
+
+            // 計算平均值
+            Object.values(productMap).forEach(product => {
+                product.orderCount = product.orders.length;
+                product.averageFinishedWeight = (product.totalFinishedWeightG / product.orderCount).toFixed(0);
+                product.averageCostPerGram = (product.totalCost / product.totalFinishedWeightG).toFixed(2);
+            });
+
+            return Object.values(productMap).sort((a, b) => b.orderCount - a.orderCount);
+        }
+
+        // 切換頁面
+        function switchTab(tabName) {
+            document.querySelectorAll('.card').forEach(card => card.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // 更新原料選擇下拉菜單
+        function updateMaterialSelect() {
+            const select = document.getElementById('materialSelect');
+            select.innerHTML = '<option value="">-- 請選擇 --</option>';
+            materials.forEach(m => {
+                const option = document.createElement('option');
+                option.value = m.id;
+                option.textContent = `${m.name} ($${m.costPerKg}/kg)`;
+                select.appendChild(option);
+            });
+        }
+
+        // 更新加工方法選擇器
+        function updateMethodSelector() {
+            const selector = document.getElementById('methodSelector');
+            selector.innerHTML = '';
+            processMethods.forEach(method => {
+                const label = document.createElement('label');
+                label.className = 'method-item';
+                label.innerHTML = `
+                    <input type="checkbox" value="${method.id}"
+                           ${selectedMethods.includes(method.id) ? 'checked' : ''}
+                           onchange="toggleMethod('${method.id}')">
+                    <div class="method-info">
+                        <p>${method.name}</p>
+                        <p>$${method.costPerKg}/kg</p>
+                    </div>
+                `;
+                selector.appendChild(label);
+            });
+        }
+
+        // 切換加工方法選擇
+        function toggleMethod(methodId) {
+            const index = selectedMethods.indexOf(methodId);
+            if (index > -1) {
+                selectedMethods.splice(index, 1);
+            } else {
+                selectedMethods.push(methodId);
+            }
+        }
+
+        // 計算成本
+        function calculateCost() {
+            const materialId = document.getElementById('materialSelect').value;
+            const weight = parseFloat(document.getElementById('weight').value);
+            const weightUnit = document.getElementById('weightUnit').value;
+            const shape = document.getElementById('shape').value;
+            const finishedWeight = parseFloat(document.getElementById('finishedWeight').value);
+
+            if (!materialId || !weight || !shape || !finishedWeight) {
+                alert('請填入所有欄位');
+                return;
+            }
+
+            // 轉換為公斤（如果是斤）1斤 = 0.6公斤
+            const weightInKg = weightUnit === 'jin' ? weight * 0.6 : weight;
+
+            const material = materials.find(m => m.id == materialId);
+            let totalCost = material.costPerKg * weightInKg;
+
+            processMethods
+                .filter(m => selectedMethods.includes(m.id))
+                .forEach(method => {
+                    totalCost += method.costPerKg * weightInKg;
+                });
+
+            const costPerGram = totalCost / finishedWeight;
+            const yieldRate = (finishedWeight / (weightInKg * 1000)) * 100;
+
+            const record = {
+                id: Date.now(),
+                materialName: material.name,
+                rawWeight: weight,
+                rawWeightUnit: weightUnit === 'jin' ? '斤' : 'kg',
+                rawWeightInKg: weightInKg,
+                finishedWeight: finishedWeight,
+                shape: shape,
+                totalCost: totalCost.toFixed(2),
+                costPerGram: costPerGram.toFixed(2),
+                yield: yieldRate.toFixed(2),
+                date: new Date().toLocaleDateString('zh-TW'),
+            };
+
+            records.unshift(record);
+            updateRecordsList();
+            saveToLocalStorage(); // 保存到本地
+
+            document.getElementById('weight').value = '';
+            document.getElementById('shape').value = '';
+            document.getElementById('finishedWeight').value = '';
+            document.getElementById('materialSelect').value = '';
+
+            alert(`成功記錄！每克成本: $${costPerGram.toFixed(2)}`);
+        }
+
+        // 刪除記錄
+        function deleteRecord(id) {
+            records = records.filter(r => r.id !== id);
+            updateRecordsList();
+            saveToLocalStorage(); // 保存到本地
+        }
+
+        // 更新歷史記錄列表
+        function updateRecordsList() {
+            const list = document.getElementById('recordsList');
+            updateAnalytics(); // 同時更新統計頁面
+
+            if (records.length === 0) {
+                list.innerHTML = '<div class="empty-state">尚無記錄，先計算一個產品吧！</div>';
+                return;
+            }
+
+            list.innerHTML = records.map(record => `
+                <div class="record-item">
+                    <div class="record-header">
+                        <div>
+                            <div style="font-size: 12px; color: var(--color-text-secondary);">原料名稱</div>
+                            <div style="font-weight: 600;">${record.materialName}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--color-text-secondary);">產品規格</div>
+                            <div style="font-weight: 600;">${record.shape}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--color-text-secondary);">記錄日期</div>
+                            <div style="font-weight: 600;">${record.date}</div>
+                        </div>
+                    </div>
+                    <div class="record-stat">
+                        <div class="stat-box">
+                            <div class="stat-label">原料用量</div>
+                            <div class="stat-value">${record.rawWeight} ${record.rawWeightUnit}</div>
+                            <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">(${record.rawWeightInKg} kg)</div>
+                        </div>
+                        <div class="stat-box green">
+                            <div class="stat-label">成品淨重</div>
+                            <div class="stat-value">${record.finishedWeight} g</div>
+                        </div>
+                        <div class="stat-box purple">
+                            <div class="stat-label">每克成本</div>
+                            <div class="stat-value">$${record.costPerGram}</div>
+                        </div>
+                        <div class="stat-box orange">
+                            <div class="stat-label">得率</div>
+                            <div class="stat-value">${record.yield}%</div>
+                        </div>
+                    </div>
+                    <div class="record-footer">
+                        <span>總成本: <strong>$${record.totalCost}</strong></span>
+                        <button class="btn btn-danger" onclick="deleteRecord(${record.id})">🗑️ 刪除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 新增原料
+        function addMaterial() {
+            const name = document.getElementById('newMaterialName').value;
+            const cost = parseFloat(document.getElementById('newMaterialCost').value);
+
+            if (!name || !cost) {
+                alert('請填入原料名稱和價格');
+                return;
+            }
+
+            const newId = Math.max(...materials.map(m => m.id), 0) + 1;
+            materials.push({ id: newId, name, costPerKg: cost });
+
+            document.getElementById('newMaterialName').value = '';
+            document.getElementById('newMaterialCost').value = '';
+
+            updateMaterialSelect();
+            updateMaterialsList();
+            saveToLocalStorage();
+        }
+
+        // 編輯原料
+        function editMaterial(id, field, value) {
+            const material = materials.find(m => m.id === id);
+            if (material) {
+                if (field === 'name') {
+                    material.name = value;
+                } else if (field === 'costPerKg') {
+                    material.costPerKg = parseFloat(value);
+                } else if (field === 'costPerJin') {
+                    // 1斤 = 0.6公斤，所以 $/斤 = ($/kg) * 0.6
+                    material.costPerKg = parseFloat(value) / 0.6;
+                }
+                updateMaterialSelect();
+                updateMaterialsList();
+            }
+        }
+
+        // 刪除原料
+        function deleteMaterial(id) {
+            if (materials.length <= 1) {
+                alert('至少要保留一個原料');
+                return;
+            }
+            materials = materials.filter(m => m.id !== id);
+            updateMaterialSelect();
+            updateMaterialsList();
+            saveToLocalStorage();
+        }
+
+        // 移動原料排序
+        function moveMaterial(id, direction) {
+            const index = materials.findIndex(m => m.id === id);
+            if (direction === 'up' && index > 0) {
+                [materials[index], materials[index - 1]] = [materials[index - 1], materials[index]];
+            } else if (direction === 'down' && index < materials.length - 1) {
+                [materials[index], materials[index + 1]] = [materials[index + 1], materials[index]];
+            }
+            updateMaterialSelect();
+            updateMaterialsList();
+            saveToLocalStorage();
+        }
+
+        // 更新原料列表
+        function updateMaterialsList() {
+            const list = document.getElementById('materialsList');
+            list.innerHTML = materials.map((material, index) => {
+                const costPerJin = (material.costPerKg * 0.6).toFixed(2);
+                return `
+                <div class="edit-item">
+                    <div class="edit-item-header">
+                        <div style="flex: 1;">
+                            <input type="text" value="${material.name}"
+                                   onchange="editMaterial(${material.id}, 'name', this.value)"
+                                   placeholder="原料名稱"
+                                   style="width: 100%;">
+                        </div>
+                        <div class="edit-item-actions">
+                            ${index > 0 ? `<button class="btn btn-small" onclick="moveMaterial(${material.id}, 'up')">⬆️</button>` : ''}
+                            ${index < materials.length - 1 ? `<button class="btn btn-small" onclick="moveMaterial(${material.id}, 'down')">⬇️</button>` : ''}
+                            <button class="btn btn-danger btn-small" onclick="deleteMaterial(${material.id})">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div class="edit-item-content">
+                        <span class="unit">$</span>
+                        <input type="number" value="${material.costPerKg}"
+                               onchange="editMaterial(${material.id}, 'costPerKg', this.value)"
+                               placeholder="價格">
+                        <span class="unit">/kg</span>
+                    </div>
+
+                    <div class="price-converter">
+                        <span class="price-converter-label">或輸入斤的價格</span>
+                        <div class="price-converter-input">
+                            <span class="unit">$</span>
+                            <input type="number" value="${costPerJin}"
+                                   onchange="editMaterial(${material.id}, 'costPerJin', this.value)"
+                                   placeholder="斤的價格">
+                            <span class="unit">/斤 (自動轉換)</span>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // 新增加工方法
+        function addMethod() {
+            const name = document.getElementById('newMethodName').value;
+            const cost = parseFloat(document.getElementById('newMethodCost').value);
+
+            if (!name || !cost) {
+                alert('請填入加工方法名稱和價格');
+                return;
+            }
+
+            const newMethodId = `method_${Date.now()}`;
+            processMethods.push({ id: newMethodId, name, costPerKg: cost });
+            selectedMethods.push(newMethodId);
+
+            document.getElementById('newMethodName').value = '';
+            document.getElementById('newMethodCost').value = '';
+
+            updateMethodSelector();
+            updateMethodsList();
+        }
+
+        // 編輯加工方法
+        function editMethod(id, field, value) {
+            const method = processMethods.find(m => m.id === id);
+            if (method) {
+                if (field === 'name') {
+                    method.name = value;
+                } else if (field === 'costPerKg') {
+                    method.costPerKg = parseFloat(value);
+                } else if (field === 'costPerJin') {
+                    // 1斤 = 0.6公斤，所以 $/斤 = ($/kg) * 0.6
+                    method.costPerKg = parseFloat(value) / 0.6;
+                }
+                updateMethodSelector();
+                updateMethodsList();
+            }
+        }
+
+        // 刪除加工方法
+        function deleteMethod(id) {
+            processMethods = processMethods.filter(m => m.id !== id);
+            selectedMethods = selectedMethods.filter(methodId => methodId !== id);
+            updateMethodSelector();
+            updateMethodsList();
+        }
+
+        // 移動加工方法排序
+        function moveMethod(id, direction) {
+            const index = processMethods.findIndex(m => m.id === id);
+            if (direction === 'up' && index > 0) {
+                [processMethods[index], processMethods[index - 1]] = [processMethods[index - 1], processMethods[index]];
+            } else if (direction === 'down' && index < processMethods.length - 1) {
+                [processMethods[index], processMethods[index + 1]] = [processMethods[index + 1], processMethods[index]];
+            }
+            updateMethodSelector();
+            updateMethodsList();
+        }
+
+        // 更新加工方法列表
+        function updateMethodsList() {
+            const list = document.getElementById('methodsList');
+            list.innerHTML = processMethods.map((method, index) => {
+                const costPerJin = (method.costPerKg * 0.6).toFixed(2);
+                return `
+                <div class="edit-item">
+                    <div class="edit-item-header">
+                        <div style="flex: 1;">
+                            <input type="text" value="${method.name}"
+                                   onchange="editMethod('${method.id}', 'name', this.value)"
+                                   placeholder="加工方法名稱"
+                                   style="width: 100%;">
+                        </div>
+                        <div class="edit-item-actions">
+                            ${index > 0 ? `<button class="btn btn-small" onclick="moveMethod('${method.id}', 'up')">⬆️</button>` : ''}
+                            ${index < processMethods.length - 1 ? `<button class="btn btn-small" onclick="moveMethod('${method.id}', 'down')">⬇️</button>` : ''}
+                            <button class="btn btn-danger btn-small" onclick="deleteMethod('${method.id}')">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div class="edit-item-content">
+                        <span class="unit">$</span>
+                        <input type="number" value="${method.costPerKg}"
+                               onchange="editMethod('${method.id}', 'costPerKg', this.value)"
+                               placeholder="價格">
+                        <span class="unit">/kg</span>
+                    </div>
+
+                    <div class="price-converter">
+                        <span class="price-converter-label">或輸入斤的價格</span>
+                        <div class="price-converter-input">
+                            <span class="unit">$</span>
+                            <input type="number" value="${costPerJin}"
+                                   onchange="editMethod('${method.id}', 'costPerJin', this.value)"
+                                   placeholder="斤的價格">
+                            <span class="unit">/斤 (自動轉換)</span>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // 更新統計分析
+        function updateAnalytics() {
+            const analytics = calculateAnalytics();
+            const container = document.getElementById('analyticsContent');
+
+            if (analytics.length === 0) {
+                container.innerHTML = '<div class="empty-state">還沒有記錄，先計算幾個產品吧！</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h3>共 ${analytics.length} 個品項</h3>
+                </div>
+                ${analytics.map((product, index) => `
+                    <div style="border: 2px solid var(--color-border); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; background: white;"
+                         onclick="showProductDetail(${index})">
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;">
+                            <div>
+                                <h3 style="margin-bottom: 8px; color: var(--color-text-primary);">${product.name}</h3>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 13px;">
+                                    <div><span style="color: var(--color-text-secondary);">訂單數</span><br><strong>${product.orderCount} 次</strong></div>
+                                    <div><span style="color: var(--color-text-secondary);">總成品</span><br><strong>${product.totalFinishedWeightG} g</strong></div>
+                                    <div><span style="color: var(--color-text-secondary);">平均每克</span><br><strong>$${product.averageCostPerGram}</strong></div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 24px; font-weight: bold; color: var(--color-primary);">${product.orderCount}</div>
+                                <div style="font-size: 12px; color: var(--color-text-secondary);">訂單</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        // 顯示品項詳情
+        function showProductDetail(index) {
+            const analytics = calculateAnalytics();
+            const product = analytics[index];
+            currentProductDetail = product;
+
+            document.getElementById('productDetail').classList.add('active');
+            document.getElementById('analytics').classList.remove('active');
+
+            document.getElementById('productDetailTitle').textContent = product.name;
+
+            const detailContent = document.getElementById('productDetailContent');
+            detailContent.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                    <div class="stat-box">
+                        <div class="stat-label">訂單次數</div>
+                        <div class="stat-value">${product.orderCount}</div>
+                    </div>
+                    <div class="stat-box green">
+                        <div class="stat-label">總原料量</div>
+                        <div class="stat-value">${product.totalRawWeightKg.toFixed(1)} kg</div>
+                    </div>
+                    <div class="stat-box purple">
+                        <div class="stat-label">總成品量</div>
+                        <div class="stat-value">${(product.totalFinishedWeightG / 1000).toFixed(2)} kg</div>
+                    </div>
+                    <div class="stat-box orange">
+                        <div class="stat-label">平均每克成本</div>
+                        <div class="stat-value">$${product.averageCostPerGram}</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 24px; margin-bottom: 12px;">訂單明細</h3>
+                ${product.orders.map(order => `
+                    <div style="border: 2px solid var(--color-border); border-radius: 8px; padding: 12px; margin-bottom: 12px; background: var(--color-bg-lighter);">
+                        <div style="display: grid; grid-template-columns: auto 1fr; gap: 16px; margin-bottom: 12px;">
+                            <div>
+                                <div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px;">日期</div>
+                                <div style="font-weight: 600;">${order.date}</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;">
+                                <div>
+                                    <div style="font-size: 12px; color: var(--color-text-secondary);">原料</div>
+                                    <div style="font-weight: 600;">${order.rawWeight} ${order.rawWeightUnit}</div>
+                                    <div style="font-size: 11px; color: var(--color-text-secondary);">(${order.rawWeightInKg} kg)</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: var(--color-text-secondary);">成品</div>
+                                    <div style="font-weight: 600;">${order.finishedWeight} g</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: var(--color-text-secondary);">得率</div>
+                                    <div style="font-weight: 600;">${((order.finishedWeight / (order.rawWeightInKg * 1000)) * 100).toFixed(1)}%</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: var(--color-text-secondary);">每克成本</div>
+                                    <div style="font-weight: 600; color: var(--color-primary);">$${order.costPerGram}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        // 頁面加載時初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
